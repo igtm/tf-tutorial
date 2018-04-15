@@ -62,30 +62,34 @@ train_accuracy_results = []
 
 num_epochs = 201
 
-for epoch in range(num_epochs):
-  epoch_loss_avg = tfe.metrics.Mean()
-  epoch_accuracy = tfe.metrics.Accuracy()
+writer = tf.contrib.summary.create_file_writer('tmp')
+with writer.as_default():
+  with tf.contrib.summary.always_record_summaries():
+    for epoch in range(num_epochs):
+      epoch_loss_avg = tfe.metrics.Mean()
+      epoch_accuracy = tfe.metrics.Accuracy()
 
-  # Training loop - using batches of 32
-  for x, y in tfe.Iterator(train_dataset):
-    # Optimize the model
-    grads = grad(model, x, y)
-    optimizer.apply_gradients(zip(grads, model.variables),
-                              global_step=tf.train.get_or_create_global_step())
+      # Training loop - using batches of 32
+      for x, y in tfe.Iterator(train_dataset):
+        # Optimize the model
+        grads = grad(model, x, y)
+        optimizer.apply_gradients(zip(grads, model.variables),
+                                  global_step=tf.train.get_or_create_global_step())
 
-    # Track progress
-    epoch_loss_avg(loss(model, x, y))  # add current batch loss
-    # compare predicted label to actual label
-    epoch_accuracy(tf.argmax(model(x), axis=1, output_type=tf.int32), y)
+        # Track progress
+        epoch_loss_avg(loss(model, x, y))  # add current batch loss
+        # compare predicted label to actual label
+        epoch_accuracy(tf.argmax(model(x), axis=1, output_type=tf.int32), y)
 
-  # end epoch
-  train_loss_results.append(epoch_loss_avg.result())
-  train_accuracy_results.append(epoch_accuracy.result())
+      # end epoch
+      train_loss_results.append(epoch_loss_avg.result())
+      train_accuracy_results.append(epoch_accuracy.result())
+      tf.contrib.summary.scalar('accuracy', epoch_accuracy.result())
 
-  if epoch % 50 == 0:
-    print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
-                                                                epoch_loss_avg.result(),
-                                                                epoch_accuracy.result()))
+      if epoch % 50 == 0:
+        print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
+                                                                    epoch_loss_avg.result(),
+                                                                    epoch_accuracy.result()))
 
 # Visualize
 fig, axes = plt.subplots(2, sharex=True, figsize=(12, 8))
