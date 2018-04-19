@@ -18,23 +18,32 @@ def cnn_model_fn(features, labels, mode):
   input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 
   # Convolutional Layer #1: Applies 32 5x5 filters (extracting 5x5-pixel subregions), with ReLU activation function
+  # CNNの畳み込みに関しては これがわかりやすい @see: https://qiita.com/icoxfog417/items/5fd55fad152231d706c2
+  # 畳み込み層: 特徴抽出する意味がある
+  # => [batch_size, 28, 28, 32]
   conv1 = tf.layers.conv2d(
       inputs=input_layer,
-      filters=32,
-      kernel_size=[5, 5],
-      padding="same",
+      filters=32, # filterの数 (2の累乗をセットすることが多い。32,64,128...)
+      kernel_size=[5, 5], # filterの大きさ/サイズ
+      padding="same", # 余白部分: valid(default) or same: sameはoutputがinputと同じwidth,heightになるようにpaddingを自動で挿入してくれる。普通にpadding無しでやると 28x28 5x5 => 24x24になってしまう。(inputsize-filtersize)/stride + 1   (28-5)/1 + 1 = 24
       activation=tf.nn.relu)
 
   # Pooling Layer #1: Performs max pooling with a 2x2 filter and stride of 2 (which specifies that pooled regions do not overlap)
-  pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+  # プーリング層: データ圧縮の意味がある
+  # maxpooling: filter内の最大値を取っていく手法
+  # => [batch_size, 14, 14, 32]
+  pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2) # [14,14] の半分になる
 
   # Convolutional Layer #2 and Pooling Layer #2: Applies 64 5x5 filters, with ReLU activation function
+  # => [batch_size, 14, 14, 64]
   conv2 = tf.layers.conv2d(
       inputs=pool1,
       filters=64,
       kernel_size=[5, 5],
       padding="same",
       activation=tf.nn.relu)
+      
+  # => [batch_size, 7, 7, 64]
   pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2) # Pooling Layer #2: Again, performs max pooling with a 2x2 filter and stride of 2
 
   # Dense Layer #1: 1,024 neurons, with dropout regularization rate of 0.4 (probability of 0.4 that any given element will be dropped during training)
